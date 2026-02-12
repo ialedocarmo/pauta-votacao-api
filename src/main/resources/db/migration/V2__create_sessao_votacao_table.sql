@@ -1,0 +1,7 @@
+CREATE TABLE sessao_votacao (
+  id BIGSERIAL PRIMARY KEY,
+  pauta_id BIGINT NOT NULL UNIQUE,
+  inicio TIMESTAMP WITH TIME ZONE NOT NULL,
+  fim TIMESTAMP WITH TIME ZONE NOT NULL,
+  CONSTRAINT fk_sessao_pauta FOREIGN KEY (pauta_id) REFERENCES pauta (id)
+);

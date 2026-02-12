@@ -1,18 +1,18 @@
 # pauta-votacao-api
 
-API REST para gestao de pautas, sessoes de votacao, registro de votos e apuracao de resultados.
+API REST para gestão de pautas, sessães de votação, registro de votos e apuração de resultados.
 
 ## Objetivo
-Disponibilizar um backend versionado e persistente para operacoes de votacao, com regras de negocio claras e contrato HTTP padronizado.
+Disponibilizar um backend versionado e persistente para operações de votação, com regras de negócio claras e contrato HTTP padronizado.
 
 ## Escopo
-- Apenas servidor (sem implementacao da aplicacao cliente).
+- Apenas servidor (sem implementação da aplicação cliente).
 - API REST versionada em URL: `/api/v1`.
-- Persistencia de pautas, sessoes e votos.
+- Persistencia de pautas, sessões e votos.
 - Regras principais:
   - Cada associado pode votar apenas uma vez por pauta.
-  - Sessao de votacao com duracao informada ou 60 segundos por padrao.
-  - Voto aceito apenas durante sessao aberta.
+  - Sessão de votação com duração informada ou 60 segundos por padrão.
+  - Voto aceito apenas durante sessão aberta.
   - Resultado consolidado por pauta.
 
 ## API de negocio de votacao
@@ -21,13 +21,13 @@ Base path: `/api/v1/pautas`
 - `POST /api/v1/pautas`
   - Cria uma nova pauta.
 - `POST /api/v1/pautas/{pautaId}/sessoes`
-  - Abre sessao para uma pauta (`duracaoSegundos` opcional, default 60).
+  - Abre sessão para uma pauta (`duracaoSegundos` opcional, default 60).
 - `POST /api/v1/pautas/{pautaId}/votos`
   - Registra voto (`SIM` ou `NAO`) para a pauta.
 - `GET /api/v1/pautas/{pautaId}/resultado`
-  - Retorna totais e resultado final da votacao.
+  - Retorna totais e resultado final da votação.
 
-## Padrao de erro
+## Padrão de erro
 Formato unificado para respostas de erro:
 
 ```json
@@ -39,16 +39,16 @@ Formato unificado para respostas de erro:
 }
 ```
 
-## Codigos HTTP previstos
+## Códigos HTTP previstos
 - `200` consulta com sucesso
-- `201` criacao com sucesso
-- `400` requisicao invalida
-- `404` recurso nao encontrado
-- `409` conflito de regra de negocio (ex.: voto duplicado)
-- `422` operacao nao permitida
+- `201` criação com sucesso
+- `400` requisição inválida
+- `404` recurso não encontrado
+- `409` conflito de regra de negócio (ex.: voto duplicado)
+- `422` operação não permitida
 - `500` erro interno
 
-## Execucao local
+## Execução local
 1. Subir o banco PostgreSQL:
 
 ```bash
@@ -77,7 +77,7 @@ docker compose down -v
 1. Criar uma pauta (PowerShell - recomendado no Windows):
 
 ```powershell
-Invoke-RestMethod -Method POST `
+$pauta = Invoke-RestMethod -Method POST `
   -Uri "http://localhost:8080/api/v1/pautas" `
   -ContentType "application/json" `
   -Body '{"titulo":"Reforma do Estatuto"}'
@@ -87,7 +87,7 @@ Resposta esperada:
 - HTTP `201 Created`
 - JSON com `id`, `titulo` e `createdAt`
 
-2. Testar validacao de entrada (titulo vazio):
+2. Testar validação de entrada (título vazio):
 
 ```powershell
 Invoke-RestMethod -Method POST `
@@ -98,4 +98,34 @@ Invoke-RestMethod -Method POST `
 
 Resposta esperada:
 - HTTP `400 Bad Request`
-- JSON no padrao de erro com `timestamp`, `status`, `message` e `path`
+- JSON no padrão de erro com `timestamp`, `status`, `message` e `path`
+
+3. Abrir sessão com duração padrão (60 segundos):
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pauta.id)/sessoes" `
+  -ContentType "application/json" `
+  -Body '{}'
+```
+
+Resposta esperada:
+- HTTP `201 Created`
+- JSON com `id`, `pautaId`, `inicio`, `fim` e `duracaoSegundos=60`
+
+4. Abrir sessão com duração explicita:
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pauta.id)/sessoes" `
+  -ContentType "application/json" `
+  -Body '{"duracaoSegundos":120}'
+```
+
+Resposta esperada:
+- HTTP `201 Created`
+- JSON com `duracaoSegundos=120`
+
+5. Erros esperados da abertura de sessão:
+- `404 Not Found` quando `pautaId` não existe.
+- `409 Conflict` quando a pauta já possui sessão cadastrada.
