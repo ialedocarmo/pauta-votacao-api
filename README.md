@@ -27,30 +27,129 @@ Disponibilizar um backend versionado e persistente para operacoes de votacao, co
   - `ApiError`
   - `TimeConfig` com `Clock` injetavel
 
-## Escolhas tecnicas (resumo)
+## Escolhas tecnicas
 - Spring Boot + Spring Data JPA + Flyway para simplicidade e manutencao.
 - PostgreSQL para persistencia relacional com constraints de integridade.
 - `Clock` injetavel para regras temporais testaveis.
 - Erros padronizados no backend para facilitar consumo por clientes.
 
-## API de negocio de votacao
+## Qualidade e limpeza
+- Flyway para versionamento de schema (`V1`, `V2`, `V3`).
+- Constraints no banco para integridade:
+  - unicidade de sessao por pauta
+  - unicidade de voto por pauta + associado
+  - check para valores de voto validos
+- Tratamento centralizado de excecoes (`GlobalExceptionHandler`).
+
+## Execucao local
+1. Subir o banco:
+```bash
+docker compose up -d
+```
+2. Rodar a API:
+```bash
+mvn spring-boot:run
+```
+3. Parar e remover volumes (reset de dados local):
+
+```bash
+docker compose down -v
+```
+
+## Swagger / OpenAPI
+- UI: `http://localhost:8080/swagger-ui.html`
+- JSON: `http://localhost:8080/v3/api-docs`
+
+## Endpoints e exemplos JSON
 Base path: `/api/v1/pautas`
 
-- `POST /api/v1/pautas`
-  - Cria uma nova pauta.
-- `POST /api/v1/pautas/{pautaId}/sessoes`
-  - Abre sessao para uma pauta (`duracaoSegundos` opcional, default 60).
-- `POST /api/v1/pautas/{pautaId}/votos`
-  - Registra voto (`SIM` ou `NAO`) para a pauta.
-- `GET /api/v1/pautas/{pautaId}/resultado`
-  - Retorna totais e resultado final da votacao.
+### 1) Criar pauta
+`POST /api/v1/pautas`
+
+Request:
+```json
+{
+  "titulo": "Reforma do Estatuto"
+}
+```
+
+Response `201`:
+```json
+{
+  "id": 1,
+  "titulo": "Reforma do Estatuto",
+  "createdAt": "2026-02-12T12:00:00Z"
+}
+```
+
+### 2) Abrir sessao
+`POST /api/v1/pautas/{pautaId}/sessoes`
+
+Request (duracao explicita):
+```json
+{
+  "duracaoSegundos": 120
+}
+```
+
+Request (padrao 60s):
+```json
+{}
+```
+
+Response `201`:
+```json
+{
+  "id": 10,
+  "pautaId": 1,
+  "inicio": "2026-02-12T12:05:00Z",
+  "fim": "2026-02-12T12:07:00Z",
+  "duracaoSegundos": 120
+}
+```
+
+### 3) Registrar voto
+`POST /api/v1/pautas/{pautaId}/votos`
+
+Request:
+```json
+{
+  "associadoId": "assoc-001",
+  "voto": "SIM"
+}
+```
+
+Response `201`:
+```json
+{
+  "id": 100,
+  "pautaId": 1,
+  "associadoId": "assoc-001",
+  "voto": "SIM",
+  "createdAt": "2026-02-12T12:06:00Z"
+}
+```
+
+### 4) Consultar resultado
+`GET /api/v1/pautas/{pautaId}/resultado`
+
+Response `200`:
+```json
+{
+  "pautaId": 1,
+  "titulo": "Reforma do Estatuto",
+  "totalSim": 10,
+  "totalNao": 7,
+  "totalVotos": 17,
+  "resultado": "APROVADA"
+}
+```
 
 ## Padrao de erro
 Formato unificado para respostas de erro:
-
 ```json
 {
-  "timestamp": "2026-02-11T12:10:00Z",
+  "timestamp": "2026-02-12T12:10:00Z",
   "status": 400,
   "message": "sessao de votacao encerrada para esta pauta",
   "path": "/api/v1/pautas/1/votos"
@@ -65,80 +164,8 @@ Formato unificado para respostas de erro:
 - `409` conflito de regra de negocio (ex.: voto duplicado)
 - `500` erro interno
 
-## Execucao local
-1. Subir o banco PostgreSQL:
-
-```bash
-docker compose up -d
-```
-
-2. Rodar a API:
-
-```bash
-mvn spring-boot:run
-```
-
-3. Parar containers:
-
-```bash
-docker compose down
-```
-
-4. Parar e remover volumes (reset de dados local):
-
-```bash
-docker compose down -v
-```
-
-## Como testar (PowerShell)
-1. Criar uma pauta:
-
-```powershell
-$pautaA = Invoke-RestMethod -Method POST `
-  -Uri "http://localhost:8080/api/v1/pautas" `
-  -ContentType "application/json" `
-  -Body '{"titulo":"Reforma do Estatuto"}'
-```
-
-2. Abrir sessao com duracao padrao (60 segundos):
-
-```powershell
-Invoke-RestMethod -Method POST `
-  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/sessoes" `
-  -ContentType "application/json" `
-  -Body '{}'
-```
-
-3. Registrar voto:
-
-```powershell
-Invoke-RestMethod -Method POST `
-  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/votos" `
-  -ContentType "application/json" `
-  -Body '{"associadoId":"assoc-001","voto":"SIM"}'
-```
-
-4. Consultar resultado:
-
-```powershell
-Invoke-RestMethod -Method GET `
-  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/resultado"
-```
-
-## Logs
-A aplicacao registra eventos de negocio relevantes em nivel `INFO`:
-- criacao de pauta
-- abertura de sessao
-- registro de voto
-- consulta de resultado
-
-Configuracao atual em `application.properties`:
-- `logging.level.root=INFO`
-- `logging.level.com.ialedocarmo.pauta_votacao_api=INFO`
-
-## Testes automatizados
+## Testes
 Executar:
-
 ```bash
 mvn test
 ```
@@ -148,25 +175,9 @@ Cobertura atual de regras criticas:
 - bloqueio de voto com sessao encerrada
 - normalizacao de `associadoId` antes de persistir
 
-## Qualidade e limpeza
-- Flyway para versionamento de schema (`V1`, `V2`, `V3`).
-- Constraints no banco para integridade:
-  - unicidade de sessao por pauta
-  - unicidade de voto por pauta + associado
-  - check para valores de voto validos
-- Tratamento centralizado de excecoes (`GlobalExceptionHandler`).
 
-## Estrategia de commits
-Commits curtos, semanticos e incrementais, por exemplo:
-- `feat: implementar registro de votos com regra de voto unico por associado`
-- `feat: implementar apuracao e consulta de resultado por pauta`
-- `feat: padronizar tratamento global de erros e logs`
-- `test: adicionar testes unitarios para regras de sessao e voto`
-- `docs: atualizar readme com arquitetura, testes e decisoes tecnicas`
-
-## URLs dinamicas (callback base URL)
+## URLs dinamicas
 Para evitar dominio hardcoded em links/callbacks, a aplicacao usa a propriedade:
-
 ```properties
 app.urls.callback-base-url=http://localhost:8080
 ```

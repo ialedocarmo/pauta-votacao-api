@@ -3,6 +3,11 @@ package com.ialedocarmo.pauta_votacao_api.pauta.api;
 import com.ialedocarmo.pauta_votacao_api.common.http.CreatedResponseFactory;
 import com.ialedocarmo.pauta_votacao_api.pauta.domain.Pauta;
 import com.ialedocarmo.pauta_votacao_api.pauta.service.PautaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/pautas")
+@Tag(name = "Pautas", description = "Operacoes de cadastro e apuracao de pautas")
 public class PautaController {
 
     private final PautaService pautaService;
@@ -25,6 +31,9 @@ public class PautaController {
     }
 
     @PostMapping
+    @Operation(summary = "Criar pauta", description = "Cadastra uma nova pauta para votacao")
+    @ApiResponse(responseCode = "201", description = "Pauta criada", content = @Content(schema = @Schema(implementation = PautaResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Dados invalidos")
     public ResponseEntity<PautaResponse> criar(@Valid @RequestBody CriarPautaRequest request) {
         Pauta pauta = pautaService.criar(request.titulo());
         PautaResponse response = new PautaResponse(pauta.getId(), pauta.getTitulo(), pauta.getCreatedAt());
@@ -32,6 +41,9 @@ public class PautaController {
     }
 
     @GetMapping("/{pautaId}/resultado")
+    @Operation(summary = "Consultar resultado", description = "Retorna a apuracao consolidada da pauta")
+    @ApiResponse(responseCode = "200", description = "Resultado encontrado", content = @Content(schema = @Schema(implementation = ResultadoPautaResponse.class)))
+    @ApiResponse(responseCode = "404", description = "Pauta nao encontrada")
     public ResultadoPautaResponse obterResultado(@PathVariable Long pautaId) {
         return pautaService.obterResultado(pautaId);
     }
