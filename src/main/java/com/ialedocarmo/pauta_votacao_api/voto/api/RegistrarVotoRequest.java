@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record RegistrarVotoRequest(
-        @NotBlank(message = "ID do associado é obrigatório!")
+        @NotBlank(message = "id do associado obrigatorio")
         String associadoId,
 
-        @NotNull(message = "Voto é obrigatorio!")
+        @NotNull(message = "voto obrigatorio")
         OpcaoVoto voto
 ) {
 }
