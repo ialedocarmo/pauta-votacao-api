@@ -43,6 +43,13 @@ Disponibilizar um backend versionado e persistente para operacoes de votacao, co
 - Tratamento centralizado de excecoes (`GlobalExceptionHandler`).
 
 ## Execucao local
+
+### Requisitos
+- Java 25+
+- Maven 3.9+
+- Docker + Docker Compose
+
+### Comandos
 1. Subir o banco:
 ```bash
 docker compose up -d
@@ -165,7 +172,7 @@ Formato unificado para respostas de erro:
 - `500` erro interno
 
 ## Testes automatizados
-Executar:
+### 1) Executar testes unitarios:
 ```bash
 mvn test
 ```
@@ -175,7 +182,16 @@ Cobertura atual de regras criticas:
 - bloqueio de voto com sessao encerrada
 - normalizacao de `associadoId` antes de persistir
 
-## Teste de performance (Bonus 2)
+
+### 2) Gerar cobertura com JaCoCo:
+```bash
+mvn verify
+```
+
+Relatorio de cobertura:
+- `target/site/jacoco/index.html`
+
+### 3) Teste de performance
 Teste de carga com k6 (via Docker, sem instalacao local):
 
 ```powershell
@@ -205,7 +221,3 @@ Exemplos por ambiente:
 - local desktop: `http://localhost:8080`
 - emulador/dispositivo na mesma rede: `http://192.168.0.10:8080`
 - ambiente remoto: `https://api.seudominio.com`
-
-
-
-
