@@ -157,5 +157,18 @@ Resposta esperada:
 
 7. Erros esperados adicionais:
 - `404 Not Found` ao abrir sessão para pauta inexistente.
-- `409 Conflict` ao abrir segunda sessão para a mesma pauta.
 - `400 Bad Request` ao votar sem sessão aberta ou com sessão encerrada.
+
+8. Consultar resultado da pauta:
+
+```powershell
+Invoke-RestMethod -Method GET `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/resultado"
+```
+
+Resposta esperada:
+- HTTP `200 OK`
+- JSON com `pautaId`, `titulo`, `totalSim`, `totalNao`, `totalVotos` e `resultado` (`APROVADA`, `REPROVADA` ou `EMPATE`)
+
+Erro esperado:
+- `404 Not Found` ao consultar resultado de pauta inexistente.
