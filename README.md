@@ -50,6 +50,8 @@ Disponibilizar um backend versionado e persistente para operacoes de votacao, co
 - Docker + Docker Compose
 
 ### Comandos
+Opcional: personalizar variaveis de ambiente alterando o arquivo .env
+
 1. Subir o banco:
 ```bash
 docker compose up -d
@@ -221,3 +223,5 @@ Exemplos por ambiente:
 - local desktop: `http://localhost:8080`
 - emulador/dispositivo na mesma rede: `http://192.168.0.10:8080`
 - ambiente remoto: `https://api.seudominio.com`
+
+
