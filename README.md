@@ -163,3 +163,18 @@ Commits curtos, semanticos e incrementais, por exemplo:
 - `feat: padronizar tratamento global de erros e logs`
 - `test: adicionar testes unitarios para regras de sessao e voto`
 - `docs: atualizar readme com arquitetura, testes e decisoes tecnicas`
+
+## URLs dinamicas (callback base URL)
+Para evitar dominio hardcoded em links/callbacks, a aplicacao usa a propriedade:
+
+```properties
+app.urls.callback-base-url=http://localhost:8080
+```
+
+Essa propriedade e usada pelo `ApiUrlBuilder` (`src/main/java/com/ialedocarmo/pauta_votacao_api/common/url/ApiUrlBuilder.java`) para montar URLs absolutas.
+Os endpoints `POST` retornam `Location` com essa base configuravel.
+
+Exemplos por ambiente:
+- local desktop: `http://localhost:8080`
+- emulador/dispositivo na mesma rede: `http://192.168.0.10:8080`
+- ambiente remoto: `https://api.seudominio.com`

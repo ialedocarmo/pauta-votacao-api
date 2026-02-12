@@ -1,15 +1,15 @@
 package com.ialedocarmo.pauta_votacao_api.pauta.api;
 
+import com.ialedocarmo.pauta_votacao_api.common.http.CreatedResponseFactory;
 import com.ialedocarmo.pauta_votacao_api.pauta.domain.Pauta;
 import com.ialedocarmo.pauta_votacao_api.pauta.service.PautaService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -17,16 +17,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class PautaController {
 
     private final PautaService pautaService;
+    private final CreatedResponseFactory createdResponseFactory;
 
-    public PautaController(PautaService pautaService) {
+    public PautaController(PautaService pautaService, CreatedResponseFactory createdResponseFactory) {
         this.pautaService = pautaService;
+        this.createdResponseFactory = createdResponseFactory;
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public PautaResponse criar(@Valid @RequestBody CriarPautaRequest request) {
+    public ResponseEntity<PautaResponse> criar(@Valid @RequestBody CriarPautaRequest request) {
         Pauta pauta = pautaService.criar(request.titulo());
-        return new PautaResponse(pauta.getId(), pauta.getTitulo(), pauta.getCreatedAt());
+        PautaResponse response = new PautaResponse(pauta.getId(), pauta.getTitulo(), pauta.getCreatedAt());
+        return createdResponseFactory.created("/api/v1/pautas/" + pauta.getId(), response);
     }
 
     @GetMapping("/{pautaId}/resultado")
