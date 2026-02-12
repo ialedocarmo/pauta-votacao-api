@@ -34,11 +34,12 @@ Disponibilizar um backend versionado e persistente para operacoes de votacao, co
 - Erros padronizados no backend para facilitar consumo por clientes.
 
 ## Qualidade e limpeza
-- Flyway para versionamento de schema (`V1`, `V2`, `V3`).
-- Constraints no banco para integridade:
+- Flyway para versionamento de schema (`V1`, `V2`, `V3`, `V4`).
+- Constraints e indices no banco para integridade/performance:
   - unicidade de sessao por pauta
   - unicidade de voto por pauta + associado
   - check para valores de voto validos
+  - indice composto para apuracao: `(pauta_id, voto)`
 - Tratamento centralizado de excecoes (`GlobalExceptionHandler`).
 
 ## Execucao local
@@ -51,7 +52,6 @@ docker compose up -d
 mvn spring-boot:run
 ```
 3. Parar e remover volumes (reset de dados local):
-
 ```bash
 docker compose down -v
 ```
@@ -164,7 +164,7 @@ Formato unificado para respostas de erro:
 - `409` conflito de regra de negocio (ex.: voto duplicado)
 - `500` erro interno
 
-## Testes
+## Testes automatizados
 Executar:
 ```bash
 mvn test
@@ -175,6 +175,22 @@ Cobertura atual de regras criticas:
 - bloqueio de voto com sessao encerrada
 - normalizacao de `associadoId` antes de persistir
 
+## Teste de performance (Bonus 2)
+Teste de carga com k6 (via Docker, sem instalacao local):
+
+```powershell
+docker run --rm -i `
+  -v "${PWD}:/work" `
+  -w /work `
+  -e BASE_URL=http://host.docker.internal:8080 `
+  grafana/k6 run perf/k6-votacao.js
+```
+
+Criterios de sucesso esperados:
+- `http_req_failed < 1%`
+- `http_req_duration p(95) < 800ms`
+
+Observacao: antes do teste, suba banco (`docker compose up -d`) e API (`mvn spring-boot:run`).
 
 ## URLs dinamicas
 Para evitar dominio hardcoded em links/callbacks, a aplicacao usa a propriedade:
@@ -189,3 +205,7 @@ Exemplos por ambiente:
 - local desktop: `http://localhost:8080`
 - emulador/dispositivo na mesma rede: `http://192.168.0.10:8080`
 - ambiente remoto: `https://api.seudominio.com`
+
+
+
+

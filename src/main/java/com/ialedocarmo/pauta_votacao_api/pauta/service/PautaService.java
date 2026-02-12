@@ -4,8 +4,8 @@ import com.ialedocarmo.pauta_votacao_api.pauta.api.ResultadoPautaResponse;
 import com.ialedocarmo.pauta_votacao_api.pauta.api.ResultadoVotacao;
 import com.ialedocarmo.pauta_votacao_api.pauta.domain.Pauta;
 import com.ialedocarmo.pauta_votacao_api.pauta.repository.PautaRepository;
-import com.ialedocarmo.pauta_votacao_api.voto.domain.OpcaoVoto;
 import com.ialedocarmo.pauta_votacao_api.voto.repository.VotoRepository;
+import com.ialedocarmo.pauta_votacao_api.voto.repository.VotoResumo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -40,8 +40,9 @@ public class PautaService {
         Pauta pauta = pautaRepository.findById(pautaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "pauta nao encontrada"));
 
-        long totalSim = votoRepository.countByPautaIdAndVoto(pautaId, OpcaoVoto.SIM);
-        long totalNao = votoRepository.countByPautaIdAndVoto(pautaId, OpcaoVoto.NAO);
+        VotoResumo resumo = votoRepository.resumirPorPautaId(pautaId);
+        long totalSim = resumo == null ? 0 : resumo.getTotalSim();
+        long totalNao = resumo == null ? 0 : resumo.getTotalNao();
         long totalVotos = totalSim + totalNao;
 
         ResultadoVotacao resultado = ResultadoVotacao.EMPATE;
