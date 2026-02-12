@@ -77,7 +77,7 @@ docker compose down -v
 1. Criar uma pauta (PowerShell - recomendado no Windows):
 
 ```powershell
-$pauta = Invoke-RestMethod -Method POST `
+$pautaA = Invoke-RestMethod -Method POST `
   -Uri "http://localhost:8080/api/v1/pautas" `
   -ContentType "application/json" `
   -Body '{"titulo":"Reforma do Estatuto"}'
@@ -98,26 +98,30 @@ Invoke-RestMethod -Method POST `
 
 Resposta esperada:
 - HTTP `400 Bad Request`
-- JSON no padrão de erro com `timestamp`, `status`, `message` e `path`
 
 3. Abrir sessão com duração padrão (60 segundos):
 
 ```powershell
 Invoke-RestMethod -Method POST `
-  -Uri "http://localhost:8080/api/v1/pautas/$($pauta.id)/sessoes" `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/sessoes" `
   -ContentType "application/json" `
   -Body '{}'
 ```
 
 Resposta esperada:
 - HTTP `201 Created`
-- JSON com `id`, `pautaId`, `inicio`, `fim` e `duracaoSegundos=60`
+- JSON com `duracaoSegundos=60`
 
-4. Abrir sessão com duração explicita:
+4. Criar outra pauta e abrir sessão com duração explicita:
 
 ```powershell
+$pautaB = Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas" `
+  -ContentType "application/json" `
+  -Body '{"titulo":"Pauta com sessão de 120s"}'
+
 Invoke-RestMethod -Method POST `
-  -Uri "http://localhost:8080/api/v1/pautas/$($pauta.id)/sessoes" `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pautaB.id)/sessoes" `
   -ContentType "application/json" `
   -Body '{"duracaoSegundos":120}'
 ```
@@ -126,6 +130,32 @@ Resposta esperada:
 - HTTP `201 Created`
 - JSON com `duracaoSegundos=120`
 
-5. Erros esperados da abertura de sessão:
-- `404 Not Found` quando `pautaId` não existe.
-- `409 Conflict` quando a pauta já possui sessão cadastrada.
+5. Registrar voto na pauta A:
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/votos" `
+  -ContentType "application/json" `
+  -Body '{"associadoId":"assoc-001","voto":"SIM"}'
+```
+
+Resposta esperada:
+- HTTP `201 Created`
+- JSON com `id`, `pautaId`, `associadoId`, `voto` e `createdAt`
+
+6. Voto duplicado para o mesmo associado na mesma pauta:
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas/$($pautaA.id)/votos" `
+  -ContentType "application/json" `
+  -Body '{"associadoId":"assoc-001","voto":"NAO"}'
+```
+
+Resposta esperada:
+- HTTP `409 Conflict`
+
+7. Erros esperados adicionais:
+- `404 Not Found` ao abrir sessão para pauta inexistente.
+- `409 Conflict` ao abrir segunda sessão para a mesma pauta.
+- `400 Bad Request` ao votar sem sessão aberta ou com sessão encerrada.
