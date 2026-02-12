@@ -72,3 +72,30 @@ docker compose down
 ```bash
 docker compose down -v
 ```
+
+## Como testar
+1. Criar uma pauta (PowerShell - recomendado no Windows):
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas" `
+  -ContentType "application/json" `
+  -Body '{"titulo":"Reforma do Estatuto"}'
+```
+
+Resposta esperada:
+- HTTP `201 Created`
+- JSON com `id`, `titulo` e `createdAt`
+
+2. Testar validacao de entrada (titulo vazio):
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "http://localhost:8080/api/v1/pautas" `
+  -ContentType "application/json" `
+  -Body '{"titulo":""}'
+```
+
+Resposta esperada:
+- HTTP `400 Bad Request`
+- JSON no padrao de erro com `timestamp`, `status`, `message` e `path`
