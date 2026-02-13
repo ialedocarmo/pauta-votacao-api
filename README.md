@@ -1,5 +1,4 @@
 # pauta-votacao-api
-
 API REST para gestao de pautas, sessoes de votacao, registro de votos e apuracao de resultados.
 
 ## Objetivo
@@ -15,52 +14,41 @@ Disponibilizar um backend versionado e persistente para operacoes de votacao, co
   - Voto aceito apenas durante sessao aberta.
   - Resultado consolidado por pauta.
 
-## Arquitetura e organizacao
-- Estrutura por dominio: `pauta`, `sessao`, `voto`.
-- Camadas por dominio:
-  - `api`: controllers e DTOs
-  - `service`: regras de negocio
-  - `repository`: acesso a dados
-  - `domain`: entidades e enums
-- Cross-cutting em `common` e `config`:
-  - `GlobalExceptionHandler`
-  - `ApiError`
-  - `TimeConfig` com `Clock` injetavel
-
-## Escolhas tecnicas
-- Spring Boot + Spring Data JPA + Flyway para simplicidade e manutencao.
-- PostgreSQL para persistencia relacional com constraints de integridade.
-- `Clock` injetavel para regras temporais testaveis.
-- Erros padronizados no backend para facilitar consumo por clientes.
-
-## Qualidade e limpeza
-- Flyway para versionamento de schema (`V1`, `V2`, `V3`, `V4`).
-- Constraints e indices no banco para integridade/performance:
-  - unicidade de sessao por pauta
-  - unicidade de voto por pauta + associado
-  - check para valores de voto validos
-  - indice composto para apuracao: `(pauta_id, voto)`
-- Tratamento centralizado de excecoes (`GlobalExceptionHandler`).
+## Decisoes de implementacao
+- Arquitetura em camadas por dominio (`pauta`, `sessao`, `voto`) para manter separacao clara entre API, regra de negocio e persistencia, facilitando manutencao e testes.
+- Versionamento da API em `/api/v1` para permitir evolucao sem quebra de contrato.
+- Flyway para versionamento de banco e reprodutibilidade do ambiente.
+- PostgreSQL com constraints de unicidade e integridade para reforcar regras de negocio tambem no banco.
+- `Clock` injetavel para regras temporais previsiveis e testaveis (sessao e timestamps).
+- Tratamento centralizado de erros via `GlobalExceptionHandler` com payload padronizado (`timestamp`, `status`, `message`, `path`).
+- `CreatedResponseFactory` para padronizar respostas `201 Created` com header `Location`.
+- Testes automatizados focados em contrato HTTP e regras criticas de negocio (voto unico, sessao aberta/encerrada, apuracao de resultado, validacao de entrada).
+- Refatoracoes guiadas por simplicidade: prioridade em clareza e robustez sem adicionar complexidade desnecessaria.
 
 ## Execucao local
-
 ### Requisitos
 - Java 25+
-- Maven 3.9+
 - Docker + Docker Compose
 
-### Comandos
-Opcional: personalizar variaveis de ambiente alterando o arquivo .env
+### Comandos de execucao
+> Opcional: personalizar variaveis de ambiente alterando o arquivo `.env`.
 
-1. Subir o banco:
+#### Subir o banco:
 ```bash
 docker compose up -d
-```
-2. Rodar a API:
+``` 
+
+#### Rodar a API (Windows/PowerShell, na raiz do projeto):
+```powershell
+.\mvnw.cmd spring-boot:run
+``` 
+
+#### Rodar a API (Linux/macOS, na raiz do projeto):
 ```bash
-mvn spring-boot:run
-```
-3. Parar e remover volumes (reset de dados local):
+./mvnw spring-boot:run
+``` 
+
+#### Parar e remover volumes (reset de dados local):
 ```bash
 docker compose down -v
 ```
@@ -70,19 +58,19 @@ docker compose down -v
 - JSON: `http://localhost:8080/v3/api-docs`
 
 ## Endpoints e exemplos JSON
-Base path: `/api/v1/pautas`
+Caminho base: `/api/v1/pautas`
 
 ### 1) Criar pauta
 `POST /api/v1/pautas`
 
-Request:
+Requisicao:
 ```json
 {
   "titulo": "Reforma do Estatuto"
 }
 ```
 
-Response `201`:
+Resposta `201`:
 ```json
 {
   "id": 1,
@@ -94,19 +82,19 @@ Response `201`:
 ### 2) Abrir sessao
 `POST /api/v1/pautas/{pautaId}/sessoes`
 
-Request (duracao explicita):
+Requisicao (duracao explicita):
 ```json
 {
   "duracaoSegundos": 120
 }
 ```
 
-Request (padrao 60s):
+Requisicao (padrao 60s):
 ```json
 {}
 ```
 
-Response `201`:
+Resposta `201`:
 ```json
 {
   "id": 10,
@@ -120,7 +108,7 @@ Response `201`:
 ### 3) Registrar voto
 `POST /api/v1/pautas/{pautaId}/votos`
 
-Request:
+Requisicao:
 ```json
 {
   "associadoId": "assoc-001",
@@ -128,7 +116,7 @@ Request:
 }
 ```
 
-Response `201`:
+Resposta `201`:
 ```json
 {
   "id": 100,
@@ -142,7 +130,7 @@ Response `201`:
 ### 4) Consultar resultado
 `GET /api/v1/pautas/{pautaId}/resultado`
 
-Response `200`:
+Resposta `200`:
 ```json
 {
   "pautaId": 1,
@@ -174,26 +162,31 @@ Formato unificado para respostas de erro:
 - `500` erro interno
 
 ## Testes automatizados
-### 1) Executar testes unitarios:
+### Comandos de teste
+#### Executar testes unitarios e de contrato
+Windows/PowerShell:
+```powershell
+.\mvnw.cmd test
+``` 
+Linux/macOS:
 ```bash
-mvn test
+./mvnw test
 ```
 
-Cobertura atual de regras criticas:
-- duracao padrao de sessao
-- bloqueio de voto com sessao encerrada
-- normalizacao de `associadoId` antes de persistir
-
-
-### 2) Gerar cobertura com JaCoCo:
+#### Gerar cobertura com JaCoCo
+Windows/PowerShell:
+```powershell
+.\mvnw.cmd verify
+``` 
+Linux/macOS:
 ```bash
-mvn verify
+./mvnw verify
 ```
 
-Relatorio de cobertura:
+#### Relatorio de cobertura
 - `target/site/jacoco/index.html`
 
-### 3) Teste de performance
+## Teste de performance
 Teste de carga com k6 (via Docker, sem instalacao local):
 
 ```powershell
@@ -208,7 +201,7 @@ Criterios de sucesso esperados:
 - `http_req_failed < 1%`
 - `http_req_duration p(95) < 800ms`
 
-Observacao: antes do teste, suba banco (`docker compose up -d`) e API (`mvn spring-boot:run`).
+Observacao: antes do teste, suba banco (`docker compose up -d`) e API (`.\mvnw.cmd spring-boot:run` no Windows ou `./mvnw spring-boot:run` no Linux/macOS).
 
 ## URLs dinamicas
 Para evitar dominio hardcoded em links/callbacks, a aplicacao usa a propriedade:
@@ -223,5 +216,3 @@ Exemplos por ambiente:
 - local desktop: `http://localhost:8080`
 - emulador/dispositivo na mesma rede: `http://192.168.0.10:8080`
 - ambiente remoto: `https://api.seudominio.com`
-
-
