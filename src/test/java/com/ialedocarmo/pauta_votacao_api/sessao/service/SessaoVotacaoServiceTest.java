@@ -2,6 +2,7 @@ package com.ialedocarmo.pauta_votacao_api.sessao.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class SessaoVotacaoServiceTest {
@@ -28,14 +31,49 @@ class SessaoVotacaoServiceTest {
     private PautaRepository pautaRepository;
 
     @Test
+    void deveRetornar404QuandoPautaNaoExistir() {
+        SessaoVotacaoService service = service();
+
+        when(pautaRepository.findById(1L)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.abrirSessao(1L, null));
+
+        assertEquals(404, ex.getStatusCode().value());
+        assertEquals("pauta nao encontrada", ex.getReason());
+    }
+
+    @Test
+    void deveRetornar409QuandoSessaoJaExistirParaPauta() {
+        SessaoVotacaoService service = service();
+
+        when(pautaRepository.findById(1L)).thenReturn(Optional.of(pauta("Pauta teste")));
+        when(sessaoVotacaoRepository.existsByPautaId(1L)).thenReturn(true);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.abrirSessao(1L, null));
+
+        assertEquals(409, ex.getStatusCode().value());
+        assertEquals("ja existe sessao cadastrada para a pauta", ex.getReason());
+    }
+
+    @Test
+    void deveRetornar409QuandoSaveLancarViolacaoDeIntegridade() {
+        SessaoVotacaoService service = service();
+
+        when(pautaRepository.findById(1L)).thenReturn(Optional.of(pauta("Pauta teste")));
+        when(sessaoVotacaoRepository.existsByPautaId(1L)).thenReturn(false);
+        when(sessaoVotacaoRepository.save(any(SessaoVotacao.class))).thenThrow(new DataIntegrityViolationException("violacao"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.abrirSessao(1L, null));
+
+        assertEquals(409, ex.getStatusCode().value());
+        assertEquals("ja existe sessao cadastrada para a pauta", ex.getReason());
+    }
+
+    @Test
     void deveAbrirSessaoComDuracaoPadraoDeSessentaSegundos() {
-        Clock clock = Clock.fixed(Instant.parse("2026-02-12T01:00:00Z"), ZoneOffset.UTC);
-        SessaoVotacaoService service = new SessaoVotacaoService(sessaoVotacaoRepository, pautaRepository, clock);
+        SessaoVotacaoService service = service();
 
-        Pauta pauta = new Pauta();
-        pauta.setTitulo("Pauta teste");
-
-        when(pautaRepository.findById(1L)).thenReturn(Optional.of(pauta));
+        when(pautaRepository.findById(1L)).thenReturn(Optional.of(pauta("Pauta teste")));
         when(sessaoVotacaoRepository.existsByPautaId(1L)).thenReturn(false);
         when(sessaoVotacaoRepository.save(any(SessaoVotacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -43,5 +81,19 @@ class SessaoVotacaoServiceTest {
 
         assertNotNull(sessao);
         assertEquals(60, sessao.getFim().toEpochSecond() - sessao.getInicio().toEpochSecond());
+    }
+
+    private SessaoVotacaoService service() {
+        return new SessaoVotacaoService(sessaoVotacaoRepository, pautaRepository, fixedClock());
+    }
+
+    private Clock fixedClock() {
+        return Clock.fixed(Instant.parse("2026-02-12T01:00:00Z"), ZoneOffset.UTC);
+    }
+
+    private Pauta pauta(String titulo) {
+        Pauta pauta = new Pauta();
+        pauta.setTitulo(titulo);
+        return pauta;
     }
 }
