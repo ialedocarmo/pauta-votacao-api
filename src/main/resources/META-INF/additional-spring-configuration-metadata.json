@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "app.urls.callback-base-url",
+      "type": "java.lang.String",
+      "description": "Base URL utilizada para montar callbacks/links absolutos da API.",
+      "defaultValue": "http://localhost:8080"
+    }
+  ]
+}
