@@ -48,6 +48,16 @@ docker compose up -d
 ./mvnw spring-boot:run
 ``` 
 
+#### Validacao rapida (API no ar)
+Windows/PowerShell:
+```powershell
+Invoke-RestMethod http://localhost:8080/v3/api-docs
+``` 
+Linux/macOS:
+```bash
+curl http://localhost:8080/v3/api-docs
+``` 
+
 #### Parar e remover volumes (reset de dados local):
 ```bash
 docker compose down -v
@@ -189,6 +199,7 @@ Linux/macOS:
 ## Teste de performance
 Teste de carga com k6 (via Docker, sem instalacao local):
 
+Windows/PowerShell:
 ```powershell
 docker run --rm -i `
   -v "${PWD}:/work" `
@@ -197,11 +208,22 @@ docker run --rm -i `
   grafana/k6 run perf/k6-votacao.js
 ```
 
+Linux/macOS:
+```bash
+docker run --rm -i \
+  -v "$(pwd):/work" \
+  -w /work \
+  -e BASE_URL=http://localhost:8080 \
+  --network host \
+  grafana/k6 run perf/k6-votacao.js
+```
+
 Criterios de sucesso esperados:
 - `http_req_failed < 1%`
 - `http_req_duration p(95) < 800ms`
 
 Observacao: antes do teste, suba banco (`docker compose up -d`) e API (`.\mvnw.cmd spring-boot:run` no Windows ou `./mvnw spring-boot:run` no Linux/macOS).
+Observacao Linux: `host.docker.internal` pode nao resolver; prefira `--network host` ou informe o IP da maquina em `BASE_URL`.
 
 ## URLs dinamicas
 Para evitar dominio hardcoded em links/callbacks, a aplicacao usa a propriedade:
