@@ -6,6 +6,8 @@ import com.ialedocarmo.pauta_votacao_api.pauta.domain.Pauta;
 import com.ialedocarmo.pauta_votacao_api.pauta.repository.PautaRepository;
 import com.ialedocarmo.pauta_votacao_api.voto.repository.VotoRepository;
 import com.ialedocarmo.pauta_votacao_api.voto.repository.VotoResumo;
+import java.time.Clock;
+import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,16 +22,20 @@ public class PautaService {
 
     private final PautaRepository pautaRepository;
     private final VotoRepository votoRepository;
+    private final Clock clock;
 
-    public PautaService(PautaRepository pautaRepository, VotoRepository votoRepository) {
+    public PautaService(PautaRepository pautaRepository, VotoRepository votoRepository, Clock clock) {
         this.pautaRepository = pautaRepository;
         this.votoRepository = votoRepository;
+        this.clock = clock;
     }
 
     @Transactional
     public Pauta criar(String titulo) {
         Pauta pauta = new Pauta();
         pauta.setTitulo(titulo.trim());
+        pauta.setCreatedAt(OffsetDateTime.now(clock));
+
         Pauta saved = pautaRepository.save(pauta);
         log.info("Pauta criada: id={} titulo={}", saved.getId(), saved.getTitulo());
         return saved;

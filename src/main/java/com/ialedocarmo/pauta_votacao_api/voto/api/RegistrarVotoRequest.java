@@ -3,12 +3,14 @@ package com.ialedocarmo.pauta_votacao_api.voto.api;
 import com.ialedocarmo.pauta_votacao_api.voto.domain.OpcaoVoto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record RegistrarVotoRequest(
-        @NotBlank(message = "id do associado obrigatorio")
+        @NotBlank(message = "obrigatorio")
+        @Size(max = 100, message = "id do associado deve ter no maximo 100 caracteres")
         String associadoId,
 
-        @NotNull(message = "voto obrigatorio")
+        @NotNull(message = "obrigatorio")
         OpcaoVoto voto
 ) {
 }

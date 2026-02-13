@@ -62,6 +62,7 @@ public class VotoService {
         voto.setPauta(pauta);
         voto.setAssociadoId(associadoIdNormalizado);
         voto.setVoto(opcaoVoto);
+        voto.setCreatedAt(agora);
 
         try {
             Voto saved = votoRepository.save(voto);

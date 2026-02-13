@@ -60,6 +60,21 @@ class ApiContractErrorTest {
     }
 
     @Test
+    void deveRetornar400QuandoAssociadoIdUltrapassarLimite() throws Exception {
+        String associadoIdLongo = "a".repeat(101);
+        String payload = "{\"associadoId\":\"" + associadoIdLongo + "\",\"voto\":\"SIM\"}";
+
+        mockMvc.perform(post("/api/v1/pautas/1/votos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp", notNullValue()))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message", containsString("associado")))
+                .andExpect(jsonPath("$.path").value("/api/v1/pautas/1/votos"));
+    }
+
+    @Test
     void deveRetornar400QuandoVotoForInvalido() throws Exception {
         String payload = """
                 {
