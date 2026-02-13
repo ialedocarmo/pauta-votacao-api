@@ -1,6 +1,7 @@
 package com.ialedocarmo.pauta_votacao_api.pauta.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,19 @@ class PautaServiceTest {
 
     @Mock
     private VotoRepository votoRepository;
+
+    @Test
+    void deveCriarPautaComTituloTrimadoECreatedAtDoClock() {
+        Clock clock = fixedClock();
+        PautaService service = new PautaService(pautaRepository, votoRepository, clock);
+
+        when(pautaRepository.save(any(Pauta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Pauta pauta = service.criar("   Reforma do Estatuto   ");
+
+        assertEquals("Reforma do Estatuto", pauta.getTitulo());
+        assertEquals(OffsetDateTime.now(clock), pauta.getCreatedAt());
+    }
 
     @Test
     void deveRetornarAprovadaQuandoTotalSimForMaiorQueTotalNao() {
