@@ -1,6 +1,7 @@
 package com.ialedocarmo.pauta_votacao_api.pauta.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class PautaServiceTest {
@@ -29,6 +31,17 @@ class PautaServiceTest {
 
     @Mock
     private VotoRepository votoRepository;
+
+    @Test
+    void deveLancar404QuandoPautaNaoExistir() {
+        PautaService service = new PautaService(pautaRepository, votoRepository, fixedClock());
+        when(pautaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.obterResultado(99L));
+
+        assertEquals(404, ex.getStatusCode().value());
+        assertEquals("pauta nao encontrada", ex.getReason());
+    }
 
     @Test
     void deveCriarPautaComTituloTrimadoECreatedAtDoClock() {
