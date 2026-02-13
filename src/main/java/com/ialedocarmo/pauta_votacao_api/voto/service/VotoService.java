@@ -65,7 +65,7 @@ public class VotoService {
 
         try {
             Voto saved = votoRepository.save(voto);
-            log.info("Voto registrado: pautaId={} associadoId={} voto={}", pautaId, associadoIdNormalizado, opcaoVoto);
+            log.debug("Voto registrado: pautaId={} associadoId={} voto={}", pautaId, associadoIdNormalizado, opcaoVoto);
             return saved;
         } catch (DataIntegrityViolationException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "associado ja votou nesta pauta");
